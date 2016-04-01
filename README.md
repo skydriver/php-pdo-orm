@@ -1,2 +1,2 @@
-# php-pdo-orm
-PHP ORM Lib for MySQL using PDO
+# PHP PDO ORM
+PHP ORM Lib for MySQL
