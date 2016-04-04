@@ -73,14 +73,76 @@ class MySql {
  **/
 class ModelORM {
 
+	/**
+	 *	Name of the table
+	 *
+	 *	@since 1.0.0
+	 *	@access protected
+	 *
+	 *	@var string $table
+	 **/
 	protected $table;
+
+	/**
+	 *	PDO Object
+	 *
+	 *	@since 1.0.0
+	 *	@access protected
+	 *
+	 *	@var reference $pdo
+	 *	@see http://php.net/manual/en/book.pdo.php
+	 **/
 	protected $pdo;
 
+	/**
+	 *	Default fetch mode
+	 *
+	 *	@since 1.0.0
+	 *	@access private
+	 *
+	 *	@var int $fetchMode
+	 *	@see http://php.net/manual/en/pdostatement.setfetchmode.php
+	 **/
 	private $fetchMode = PDO::FETCH_OBJ;
 
+	/**
+	 *	Where clause
+	 *
+	 *	@since 1.0.0
+	 *	@access private
+	 *
+	 *	@var string @where
+	 **/
 	private $where 	= '';
+
+	/**
+	 *	Columns to select
+	 *
+	 *	@since 1.0.0
+	 *	@access private
+	 *
+	 *	@var string $fields
+	 **/
 	private $fields = '*';
+
+	/**
+	 *	Order results
+	 *
+	 *	@since 1.0.0
+	 *	@access private
+	 *
+	 *	@var string $order
+	 **/
 	private $order 	= '';
+
+	/**
+	 *	Limit the results
+	 *
+	 *	@since 1.0.0
+	 *	@access private
+	 *
+	 *	@var string $limit
+	 **/
 	private $limit 	= '';
 
 
