@@ -84,6 +84,16 @@ class ModelORM {
 	private $limit 	= '';
 
 
+
+	/**
+	 *	Methot to Executes an SQL statement,
+	 *	returning a result set as a PDOStatement object
+	 *
+	 *	@since 1.0.0
+	 *	@access public
+	 *
+	 *	@return mixed PDOStatement object
+	 **/
 	public function get() {
 		$this->queryInit();
 
@@ -95,50 +105,141 @@ class ModelORM {
 		$this->resetQuery();
 
 		return $this->query($query, $this->fetchMode)->fetchAll();
-	}
+	} // End of function get();
 
+
+
+	/**
+	 *	Method to init the ORM
+	 *
+	 *	@since 1.0.0
+	 *	@access private
+	 *
+	 *	@return void
+	 **/
 	private function queryInit() {
+		// Create reference of MySql class
 		if (!$this->pdo) {
-			// parent::__construct();
 			$this->pdo = MySql::connect();
 		}
 
+		// Check the table or set the parent class name as table name
 		if (!$this->table) {
 			$this->table = get_called_class();
 		}
-	}
+	} // End of function queryInit();
 
+
+
+	/**
+	 *	Method to reset the query
+	 *
+	 *	@since 1.0.0
+	 *	@access private
+	 *
+	 *	@return void
+	 **/
 	private function resetQuery() {
 		$this->where 	= '';
 		$this->fields 	= '*';
 		$this->order 	= '';
 		$this->limit 	= '';
-	}
+	} // End of function resetQuery();
 
+
+
+	/**
+	 *	Method to set the where clause
+	 *
+	 *	@since 1.0.0
+	 *	@access public
+	 *
+	 *	@param string 	$column Table column name
+	 *	@param string 	$operator Compare operator
+	 *	@param string 	$value Value to compare
+	 *	@param string 	$soft OR ot AND
+	 *
+	 *	@return ModelORM
+	 **/
 	public function where( $column = '', $operator = '', $value = '', $soft = 'OR' ) {
+		// Set quotes for strings
 		$value = is_numeric($value) ? $value : sprintf("'%s'", $value);
 
+		// Append the where clause
 		$this->where .= ($this->where && $soft) ? " $soft " : '';
 		$this->where .= sprintf('%s %s %s', $column, $operator, $value);
 
 		return $this;
-	}
+	} // End of function where();
 
+
+
+	/**
+	 *	Methot to set the select columns
+	 *
+	 *	@since 1.0.0
+	 *	@access public
+	 *
+	 *	@param mixed 	$fields The columns to select
+	 *
+	 *	@return ModelORM
+	 **/
 	public function select( $fields = '*' ) {
-		$this->fields = $fields;
-		return $this;
-	}
+		$this->fields = is_array($fields) ? implode(', ', $fields) : $fields;
 
+		return $this;
+	} // End of function select();
+
+
+
+	/**
+	 *	Method to limit the results
+	 *
+	 *	@since 1.0.0
+	 *	@access public
+	 *
+	 *	@param int 	$limit Offset or results count
+	 *	@param int 	$length Results count
+	 *
+	 *	@return ModelORM
+	 **/
 	public function limit( $limit = 0, $length = 0 ) {
+		// If is set length than limit var will be offset
 		$this->limit = $length ? $limit . ', ' . $length : $limit;
 		return $this;
-	}
+	} // End of function limit();
 
+
+
+	/**
+	 *	Method to order the results
+	 *
+	 *	@since 1.0.0
+	 *	@access public
+	 *
+	 *	@param string 	$column Table column
+	 *	@param string 	$order Type ASC or DESC
+	 *
+	 *	@return ModelORM
+	 **/
 	public function order( $column = '', $order = 'ASC' ) {
 		$this->order = sprintf('%s %s', $column, $order);
 		return $this;
-	}
+	} // End of function order();
 
+
+
+	/**
+	 *	Method to allow using PDO functions.
+	 *
+	 *	@since 1.0.0
+	 *	@access public
+	 *
+	 *	@param string 	$method Name of the method to call
+	 *	@param mixed 	$args Function arguments
+	 *
+	 *	@return mixed
+	 **/
 	public function __call( $method, $args ) {
 		if ( !empty($this->pdo) && is_callable(array($this->pdo, $method)) ) {
 			return call_user_func_array(array($this->pdo, $method), $args);
@@ -158,44 +259,17 @@ class ModelORM {
 
 
 
-
+// Into MySQL create table 'users'
+// Create class with MySQL table name and ORM is ready to use
 class Users extends ModelORM {}
 
+// Create instance of your database table
+// You have only one instance of the class because the ORM use Singleton Pattern
 $user = new Users();
 $user1 = new Users();
 
+// Use the ORM
 $users = $user->where('first_name', 'like', 'J%')->limit(5)->get();
 $users2 = $user->where('first_name', 'like', 'J%')->limit(5)->get();
-$users3 = $user1->where('first_name', 'like', 'J%')->limit(5)->get();
-
 
 ?>
-
-
-
-<!DOCTYPE html>
-<html>
-	<head>
-		<title>ORM</title>
-		<style type="text/css">
-		body { font-size: 14px; line-height: normal; font-family: Arial; }
-		.wrap { max-width: 1000px; margin: 25px auto; float: none; }
-		* { padding: 0; margin: 0; }
-		p { margin-bottom: 10px; font-weight: bold; }
-		.hidden { display: block; margin-bottom: 30px; }
-		</style>
-	</head>
-
-	<body>
-		<div class="wrap">
-		<?php if ($users):
-			$counter = 1;
-			foreach ($users as $u):
-				printf('<p>%d. %s %s</p>', $counter++, $u->first_name, $u->last_name); ?>
-				<div class="hidden"><?php var_dump($u); ?></div>
-				<?php
-			endforeach;
-		endif; ?>
-		</div>
-	</body>
-</html>
