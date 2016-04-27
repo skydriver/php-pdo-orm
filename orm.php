@@ -12,12 +12,24 @@ class MySql {
 
 	private $hostname 	= 'localhost';
 	private $username 	= 'root';
-	private $password 	= '';
-	private $database 	= 'performances';
+	private $password 	= 'toor';
+	private $database 	= 'employees';
 	private $driver 	= 'mysql';
 	private $timeout 	= 30;
 	private $charset 	= '';
 
+	protected $queries = [];
+
+
+
+	/**
+	 *	Object constructor
+	 *
+	 *	@since 1.0.0
+	 *	@access private
+	 *
+	 *	@return void
+	 **/
 	private function __construct() {
 		$dns = sprintf(
 			'%s:host=%s;dbname=%s',
@@ -34,10 +46,30 @@ class MySql {
 		);
 	} // function __consstruct;
 
+
+
+	/**
+	 *	Object destructor
+	 *
+	 *	@since 1.0.0
+	 *	@access public
+	 *
+	 *	@return void
+	 **/
 	public function __destruct() {
 		$this->pdo = null;
 	} // End function __destruct();
 
+
+
+	/**
+	 *	Method to connect with the database
+	 *
+	 *	@since 1.0.0
+	 *	@access public
+	 *
+	 *	@return MySql reference
+	 **/
 	final public static function connect() {
 		if (self::$instance === null) {
 			self::$instance = new MySql();
@@ -46,16 +78,74 @@ class MySql {
 		return self::$instance;
 	} // End function connect();
 
+
+
+	/**
+	 *	Method to get the queries
+	 *
+	 *	@since 1.0.0
+	 *	@access public
+	 *
+	 *	@return Array All database queries
+	 **/
+	public function getQueries() {
+		return $this->queries;
+	} // End of function getQueries();
+
+
+
+	/**
+	 *	Method to call PDO property function
+	 *
+	 *	@since 1.0.0
+	 *	@access public
+	 *
+	 *	@param string $meethod Function to call
+	 *	@param string $args Arguments to pass
+	 *
+	 *	@return PDO response
+	 **/
 	public function __call( $method, $args ) {
 		if ( !empty($this->pdo) && is_callable(array($this->pdo, $method)) ) {
-			return call_user_func_array(array($this->pdo, $method), $args);
+			$runtimeStart = ($method === 'query') ? microtime(true) : 0;
+			$callResponse = call_user_func_array(array($this->pdo, $method), $args);
+			$runtimeEnd = ($method === 'query') ? microtime(true) : 0;
+
+			if ($method === 'query') {
+				$this->queryies[] = [
+					'query' 	=> $args[0],
+					'runtime' 	=> $runtimeEnd - $runtimeStart
+				];
+			}
+
+			return $callResponse;
 		}
 	} // End function __call();
 
+
+
+	/**
+	 *	Method to stop the cloning
+	 *
+	 *	@since 1.0.0
+	 *	@access public
+	 *
+	 *	@return boolean False
+	 **/
 	public function __clone() {
 		return false;
 	} // End function __clone();
 
+
+
+	/**
+	 *	Method to stop the wakeup
+	 *
+	 *	@since 1.0.0
+	 *	@access public
+	 *
+	 *	@return boolean False
+	 **/
 	public function __wakeup() {
 		return false;
 	} // End function __wakeup();
@@ -111,7 +201,7 @@ class ModelORM {
 	 *	@since 1.0.0
 	 *	@access private
 	 *
-	 *	@var string @where
+	 *	@var string $where
 	 **/
 	private $where 	= '';
 
@@ -131,9 +221,9 @@ class ModelORM {
 	 *	@since 1.0.0
 	 *	@access private
 	 *
-	 *	@var string $order
+	 *	@var string $orderBy
 	 **/
-	private $order 	= '';
+	private $orderBy = '';
 
 	/**
 	 *	Limit the results
@@ -144,6 +234,16 @@ class ModelORM {
 	 *	@var string $limit
 	 **/
 	private $limit 	= '';
+
+	/**
+	 *	Group the results
+	 *
+	 *	@since 1.0.0
+	 *	@access private
+	 *
+	 *	@var string $groupBy
+	 **/
+	private $groupBy = '';
 
 
 
@@ -159,11 +259,14 @@ class ModelORM {
 	public function get() {
 		$this->queryInit();
 
+		// Build the SQL query
 		$query = 'SELECT ' . $this->fields . ' FROM ' . $this->table
 		. (($this->where) ? ' WHERE ' 		. $this->where : '')
+		. (($this->groupBy) ? ' GROUP BY ' 	. $this->groupBy : '')
 		. (($this->limit) ? ' LIMIT ' 		. $this->limit : '')
-		. (($this->order) ? ' ORDER BY ' 	. $this->order : '');
+		. (($this->orderBy) ? ' ORDER BY ' 	. $this->orderBy : '');
 
+		// Reset SQL query
 		$this->resetQuery();
 
 		return $this->query($query, $this->fetchMode)->fetchAll();
@@ -202,10 +305,12 @@ class ModelORM {
 	 *	@return void
 	 **/
 	private function resetQuery() {
+		$this->table 	= '';
 		$this->where 	= '';
 		$this->fields 	= '*';
-		$this->order 	= '';
+		$this->orderBy 	= '';
 		$this->limit 	= '';
+		$this->groupBy 	= '';
 	} // End of function resetQuery();
 
 
@@ -237,6 +342,23 @@ class ModelORM {
 
 
 	/**
+	 *	Method to set the table
+	 *
+	 *	@since 1.0.0
+	 *	@access public
+	 *
+	 *	@param string $table Name of the table
+	 *
+	 *	@return ModelORM
+	 **/
+	public function table( $table = '' ) {
+		$this->table = $table;
+		return $this;
+	} // End of function table();
+
+
+
+	/**
 	 *	Methot to set the select columns
 	 *
 	 *	@since 1.0.0
@@ -248,7 +370,6 @@ class ModelORM {
 	 **/
 	public function select( $fields = '*' ) {
 		$this->fields = is_array($fields) ? implode(', ', $fields) : $fields;
-
 		return $this;
 	} // End of function select();
 
@@ -284,10 +405,27 @@ class ModelORM {
 	 *
 	 *	@return ModelORM
 	 **/
-	public function order( $column = '', $order = 'ASC' ) {
-		$this->order = sprintf('%s %s', $column, $order);
+	public function orderBy( $column = '', $order = 'ASC' ) {
+		$this->orderBy = sprintf('%s %s', $column, $order);
 		return $this;
-	} // End of function order();
+	} // End of function orderBy();
+
+
+
+	/**
+	 *	Method to group the results
+	 *
+	 *	@since 1.0.0
+	 *	@access public
+	 *
+	 *	@param string 	$column Table column
+	 *
+	 *	@return ModelORM
+	 **/
+	public function groupBy( $column = '' ) {
+		$this->groupBy = sprintf('%s', $column);
+		return $this;
+	} // End of function groupBy();
 
 
 
@@ -314,24 +452,23 @@ class ModelORM {
 
 
 
-
-
-
-
-
-
-
+/*
 // Into MySQL create table 'users'
 // Create class with MySQL table name and ORM is ready to use
-class Users extends ModelORM {}
+class Employees extends ModelORM {}
 
-// Create instance of your database table
-// You have only one instance of the class because the ORM use Singleton Pattern
-$user = new Users();
-$user1 = new Users();
+$employee = new Employees();
+// $employee2 = new Employees();
 
-// Use the ORM
-$users = $user->where('first_name', 'like', 'J%')->limit(5)->get();
-$users2 = $user->where('first_name', 'like', 'J%')->limit(5)->get();
+var_dump( $employee->table('employees')->where('birth_date', '>', '1960-0-0')->groupBy('emp_no')->limit(0, 10)->get() );
+echo '<hr />';
+
+$employee->table('employees')->select('emp_no')->limit(5)->get();
+
+$pdodb = MySql::connect();
+var_dump( $employee );
+var_dump( '-----------------------' );
+var_dump( $pdodb );
+*/
 
 ?>
